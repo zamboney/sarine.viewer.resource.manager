@@ -1,0 +1,12 @@
+{
+  "name": "sarine.viewer.resource.manager",
+  "version": "0.0.0",
+  "main": "dist/app.min.js",
+  "ignore": [
+    ".git",
+    "node_modules",
+    "package.json",
+    "Gruntfile.js"
+  ]
+}
+  
