@@ -1,25 +1,45 @@
 'use strict';
 module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt)
+    var config
 
     grunt.initConfig({
+        config: config,
         clean: {
-            build: ["dist/"]
+            build: ["dist/", "build/"],
+            postbuild: ["build/"]
+        },
+        version: {
+            options: {
+                pkg: "bower.json"
+            },
+            project: {
+                src: ['bower.json']
+            }
+        },
+        bower: {
+            install: {}
+        },
+        bower_concat: {
+            all: {
+                dest: 'build/_bower.js',
+            }
+        },
+        concat: {
+            options: {
+                separator: '\n',
+            },
+            dist: {
+                src: ['build/_bower.js', 'build/*.js'],
+                dest: 'dist/app.js',
+            },
         },
         uglify: {
             build: {
                 files: {
-                    'dist/app.min.js': ['dist/*.js']
+                    'dist/app.min.js': 'dist/app.js'
                 }
             }
-        },
-        update_json: {
-            bower: {
-                src: 'package.json', // where to read from 
-                dest: 'bower.json', // where to write to 
-                // the fields to update, as a String Grouping 
-                fields: 'name version description'
-            },
         },
         coffee: {
             build: {
@@ -28,18 +48,9 @@ module.exports = function(grunt) {
                     extDot: 'last'
                 },
                 files: {
-                    'dist/app.js': 'coffee/*.coffee'
+                    'build/app.js': 'coffee/*.coffee'
                 },
 
-            }
-        },
-
-        gitcheckout: {
-            task: {
-                options: {
-                    branch: 'dev',
-                    create: true
-                }
             }
         },
         gitcommit: {
@@ -59,24 +70,19 @@ module.exports = function(grunt) {
         gitpull: {
             build: {
                 options: {
-                    branch: "master"
-                },
-                files: {
-                    src: ["dist/*.js", "coffee/*.coffee", "bower.json"]
-                }
-            }
-        },
-        gitadd: {
-            task: {
-                options: {
-                    force: true
-                },
-                files: {
-                    src: ["Gruntfile.js", "package.json","dist/*.js", "coffee/*.coffee", "bower.json"]
+
                 }
             }
         },
         gitpush: {
+            build: {
+                option: {
+                    branch: "dev"
+                },
+                files: {
+                    src: ["dist/*.js", "coffee/*.coffee", "bower.json"]
+                }
+            },
             firstTimer: {
                 option: {
                     force: true
@@ -86,10 +92,35 @@ module.exports = function(grunt) {
                 }
             }
 
+        },
+        gitadd: {
+            firstTimer: {
+                option: {
+                    force: true
+                },
+                files: {
+                    src: ["Gruntfile.js", "package.json", "dist/*.js", "coffee/*.coffee", "bower.json"]
+                }
+            }
+
+        },
+        gittag : {
+            main: {
+                options: {
+                    tag : grunt.file.readJSON('bower.json').version,
+                    message : "update from grunt to : " + grunt.file.readJSON('bower.json').version
+                },
+                file: {
+                    src: ["Gruntfile.js", "package.json", "dist/*.js", "coffee/*.coffee", "bower.json"]
+                }
+            }
         }
 
     })
-    grunt.registerTask('build', ['clean:build', 'coffee:build', 'uglify:build']);
-    grunt.registerTask('firstTimer', ['gitadd', 'gitcommit:firstTimer', 'gitpush:firstTimer']);
+    grunt.registerTask('build', ['clean:build', 'coffee:build', 'bower', 'bower_concat', 'concat', 'uglify:build', 'clean:postbuild']);
     grunt.registerTask('commit', ['gitcommit:build', 'gitpull:build']);
+    grunt.registerTask('tag', ['version:project:patch' , 'gittag']);
+    grunt.registerTask('firstTimer', ['gitadd:firstTimer', 'gitcommit:firstTimer', 'gitpush:firstTimer']);
+
+
 };
